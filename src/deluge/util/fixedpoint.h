@@ -16,7 +16,7 @@
  */
 #pragma once
 
-#include <arm_neon.h>
+#include <arm_neon_shim.h>
 #include <bit>
 #include <cstdint>
 #include <limits>
