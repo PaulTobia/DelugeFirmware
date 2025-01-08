@@ -48,7 +48,7 @@ extern const char nothing;
 
 class String {
 public:
-	String() : data_(std::make_shared<std::string>()) {};
+	String() : data_(std::make_shared<std::string>()){};
 
 	void clear() { unique().clear(); }
 
@@ -166,13 +166,15 @@ public:
 	}
 
 	[[nodiscard]] constexpr bool iequals(std::string_view other) const {
-		return std::ranges::all_of(std::views::zip(static_cast<std::string_view>(*data_), other),
-		                           [](auto p) { return std::tolower(p.first) == std::tolower(p.second); });
+		return std::ranges::all_of(std::views::zip(*data_, other), [](std::tuple<char, char> t) {
+			return std::tolower(std::get<0>(t)) == std::tolower(std::get<1>(t));
+		});
 	}
 
 	[[nodiscard]] constexpr bool iequals(const char* other) const {
-		return std::ranges::all_of(std::views::zip(static_cast<std::string_view>(*data_), std::string_view{other}),
-		                           [](auto p) { return std::tolower(p.first) == std::tolower(p.second); });
+		return std::ranges::all_of(std::views::zip(*data_, std::string_view{other}), [](std::tuple<char, char> t) {
+			return std::tolower(std::get<0>(t)) == std::tolower(std::get<1>(t));
+		});
 	}
 
 	[[nodiscard]] constexpr bool iequals(const String& other) const {
