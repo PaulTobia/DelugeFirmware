@@ -208,10 +208,10 @@ public:
 		const float breakpoint = end - ((end - start) * (pos() / size()));
 
 		std::span first_block{buffer_.data(), pos()};
-		ds::blocks::GainRamp{breakpoint, start}.processBlock(first_block, first_block);
+		dsp::blocks::GainRamp{breakpoint, start}.processBlock(first_block, first_block);
 
 		std::span second_block{&buffer_[pos()], &buffer_[size()]};
-		ds::blocks::GainRamp{end, breakpoint}.processBlock(second_block, second_block);
+		dsp::blocks::GainRamp{end, breakpoint}.processBlock(second_block, second_block);
 	}
 
 	[[nodiscard]] constexpr size_t size() const { return size_; }
