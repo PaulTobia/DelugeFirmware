@@ -16,7 +16,6 @@
  */
 #pragma once
 
-#include <arm_neon_shim.h>
 #include <bit>
 #include <cstdint>
 #include <limits>
@@ -195,29 +194,3 @@ inline int32_t clz(uint32_t input) {
 	return (negative) ? -output_value : output_value;
 }
 #endif
-
-///@brief Clips Q63 to Q31 values.
-constexpr q31_t clip_q63(q63_t x) {
-	if ((q31_t)(x >> 32) != ((q31_t)x >> 31)) {
-		return ((0x7FFFFFFF ^ ((q31_t)(x >> 63))));
-	}
-	else {
-		return (q31_t)x;
-	}
-}
-
-constexpr int32x4_t q31_from_float(float32x4_t x) {
-	return vcvtq_n_s32_f32(x, 31);
-}
-
-constexpr int32x2_t q31_from_float(float32x2_t x) {
-	return vcvt_n_s32_f32(x, 31);
-}
-
-constexpr float32x4_t q31_to_float(int32x4_t x) {
-	return vcvtq_n_f32_s32(x, 31);
-}
-
-constexpr float32x2_t q31_to_float(int32x2_t x) {
-	return vcvt_n_f32_s32(x, 31);
-}

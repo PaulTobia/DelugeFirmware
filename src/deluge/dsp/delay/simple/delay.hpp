@@ -16,14 +16,13 @@
  */
 
 #pragma once
-#include "argon/vectorize.hpp"
 #include "buffer.hpp"
 #include "definitions_cxx.hpp"
 #include "dsp/blocks/gain_ramp.hpp"
 #include "dsp/interpolate/parameter.hpp"
 #include "dsp/stereo_sample.h"
 #include "model/types.hpp"
-#include "util/fixedpoint.h"
+#include "util/fixedpoint_neon.h"
 #include <argon.hpp>
 #include <array>
 #include <cstddef>
@@ -163,8 +162,8 @@ public:
 			Argon<float> lfo_filter_depth_value = lfo_filter_depth.NextSIMD();
 
 			auto&& [buffer_left, buffer_right] = buffers();
-			auto input_left = left.ConvertTo<float>();
-			auto input_right = right.ConvertTo<float>();
+			auto input_left = left.ConvertTo<float, 31>();
+			auto input_right = right.ConvertTo<float, 31>();
 
 			left = buffer_left.ReadSIMD().ConvertTo<q31_t, 31>(); // To Q31
 			buffer_left.Advance(4);

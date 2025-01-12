@@ -22,6 +22,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <ranges>
 #include <span>
 
 namespace deluge::dsp::delay::simple {
@@ -126,7 +127,7 @@ public:
 		// Fast wraparound: do a comparison against the length to get a vector of bitmasks, bitwise-and them with the
 		// vector of the length so that only the lanes _over_ that length are populated, then subtract that from the
 		// original set of indices
-		index_integral = index_integral - (Argon<uint32_t>(size_) & (index_integral >= size_));
+		index_integral = index_integral - (Argon<uint32_t>{size_} & (index_integral >= size_));
 
 		return InterpolateHermiteTableSIMD<float>(buffer_, index_integral, index_fractional);
 	}
@@ -143,7 +144,7 @@ public:
 		if (size() == origin.size()) [[unlikely]] {
 			const size_t read_pos = origin.pos();
 			if (read_pos == 0) {
-				std::copy(origin.buffer_.begin(), origin.buffer_.end(), buffer_.begin());
+				std::ranges::copy(origin.buffer_, buffer_.begin());
 				return;
 			}
 
@@ -191,13 +192,13 @@ public:
 		// than the new buffer, so we don't need to copy in segments
 		if (origin.pos() >= size()) {
 			// copies n newest samples to an n-sized buffer
-			std::copy(&origin.buffer_[origin.pos() - size()], &origin.buffer_[origin.pos()], buffer_.begin());
+			std::copy_n(&origin.buffer_[origin.pos() - size()], size(), buffer_.begin());
 			return;
 		}
 
 		size_t wrap_size = size() - origin.pos();
-		std::copy(&origin.buffer_[origin.size() - wrap_size], &origin.buffer_[origin.size()], buffer_.begin());
-		std::copy(&origin.buffer_[0], &origin.buffer_[origin.size()], &buffer_[wrap_size]);
+		std::copy_n(&origin.buffer_[origin.size() - wrap_size], wrap_size, buffer_.begin());
+		std::copy_n(&origin.buffer_[0], origin.size(), &buffer_[wrap_size]);
 	}
 
 	void ApplyGainRamp(dsp::blocks::GainRamp gain_ramp) {
