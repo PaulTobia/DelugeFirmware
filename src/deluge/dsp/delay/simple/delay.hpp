@@ -28,6 +28,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 namespace deluge::dsp::delay::simple {
 
@@ -162,7 +163,8 @@ public:
 			Argon<float> lfo_filter_depth_value = lfo_filter_depth.NextSIMD();
 
 			auto&& [buffer_left, buffer_right] = buffers();
-			auto [input_left, input_right] = {left, right};
+			auto input_left = left.ConvertTo<float>();
+			auto input_right = right.ConvertTo<float>();
 
 			left = buffer_left.ReadSIMD().ConvertTo<q31_t, 31>(); // To Q31
 			buffer_left.Advance(4);

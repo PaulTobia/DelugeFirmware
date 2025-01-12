@@ -20,8 +20,10 @@
 #include <bit>
 #include <cstdint>
 #include <limits>
+
 // signed 31 fractional bits (e.g. one would be 1<<31 but can't be represented)
 using q31_t = int32_t;
+using q63_t = int64_t;
 
 constexpr q31_t ONE_Q31{2147483647};
 constexpr float ONE_Q31f{2147483647.0f};
@@ -194,8 +196,6 @@ inline int32_t clz(uint32_t input) {
 }
 #endif
 
-using q63_t = int64_t;
-
 ///@brief Clips Q63 to Q31 values.
 constexpr q31_t clip_q63(q63_t x) {
 	if ((q31_t)(x >> 32) != ((q31_t)x >> 31)) {
@@ -206,20 +206,12 @@ constexpr q31_t clip_q63(q63_t x) {
 	}
 }
 
-constexpr q31_t q31_from_float(float x) {
-	return clip_q63((q63_t)(x * 2147483648.0f));
-}
-
 constexpr int32x4_t q31_from_float(float32x4_t x) {
 	return vcvtq_n_s32_f32(x, 31);
 }
 
 constexpr int32x2_t q31_from_float(float32x2_t x) {
 	return vcvt_n_s32_f32(x, 31);
-}
-
-constexpr float q31_to_float(q31_t x) {
-	return (float)x / 2147483648.0f;
 }
 
 constexpr float32x4_t q31_to_float(int32x4_t x) {

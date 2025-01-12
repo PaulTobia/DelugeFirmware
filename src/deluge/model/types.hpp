@@ -6,9 +6,9 @@
 template <typename T>
 struct Value {
 	T value = 0;
-	operator T() { return value; }
-	auto operator<=>(const Value<T>& o) const = default;
-	bool operator==(const Value<T>& o) const = default;
+	constexpr operator T() { return value; }
+	constexpr auto operator<=>(const Value<T>& o) const = default;
+	constexpr bool operator==(const Value<T>& o) const = default;
 };
 
 template <typename T>
@@ -77,5 +77,5 @@ struct QFactor : Value<T> {
 struct Milliseconds : Value<int32_t> {
 	static constexpr std::string_view unit = "ms";
 	auto operator<=>(const Milliseconds& o) const { return this->value <=> o.value; }
-	bool operator==(const Milliseconds& o) const { return this->value == o.value; }
+	constexpr bool operator==(const Milliseconds& o) const { return this->value == o.value; }
 };

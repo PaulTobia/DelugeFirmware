@@ -2,6 +2,7 @@
 
 #include "dsp/stereo_sample.h"
 #include <argon.hpp>
+#include <span>
 
 namespace deluge::dsp::blocks {
 class GainRamp {

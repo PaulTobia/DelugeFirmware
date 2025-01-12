@@ -22,6 +22,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 namespace deluge::dsp::delay::simple {
 
@@ -199,17 +200,17 @@ public:
 		std::copy(&origin.buffer_[0], &origin.buffer_[origin.size()], &buffer_[wrap_size]);
 	}
 
-	void ApplyGainRamp(blocks::GainRamp gain_ramp) {
+	void ApplyGainRamp(dsp::blocks::GainRamp gain_ramp) {
 		const float start = gain_ramp.start();
 		const float end = gain_ramp.end();
 
 		const float breakpoint = end - ((end - start) * (pos() / size()));
 
 		std::span first_block{buffer_.data(), pos()};
-		blocks::GainRamp{breakpoint, start}.processBlock(first_block, first_block);
+		ds::blocks::GainRamp{breakpoint, start}.processBlock(first_block, first_block);
 
 		std::span second_block{&buffer_[pos()], &buffer_[size()]};
-		blocks::GainRamp{end, breakpoint}.processBlock(second_block, second_block);
+		ds::blocks::GainRamp{end, breakpoint}.processBlock(second_block, second_block);
 	}
 
 	[[nodiscard]] constexpr size_t size() const { return size_; }
