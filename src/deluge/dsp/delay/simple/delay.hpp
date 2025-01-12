@@ -39,18 +39,15 @@ class Delay {
 	constexpr static size_t kNumSamplesMax =
 	    kNumSamplesMainDelay + (kNumSamplesMainDelay / 3.f); // 6.666 seconds maximum
 public:
+	/// @brief The mode of the Delay
 	enum class Mode {
-		Repitch,
-		Fade,
-		Jump,
+		Repitch, ///< Repitch on delay length change (akin to tape speed)
+		Fade,    ///< Fade previous delay on length change
+		Jump,    ///< Hard cut to new delay
 	};
 
-	enum class ChannelMode {
-		Sync, // beat-synced
-		Time, // strict timing
-	};
+	/// @brief The
 	struct ChannelConfig {
-		ChannelMode mode;
 		Milliseconds duration;   // ms for time, beat divisions for sync, internally stored as ms
 		Percentage<float> nudge; // up to 0.33 (33%)
 
@@ -60,11 +57,13 @@ public:
 	};
 
 	struct Config {
-		bool channel_link = true; // uses first config for all settings
+		bool channel_link = true; // uses first config for both channels
 		ChannelConfig l_channel;  // stereo
 		ChannelConfig r_channel;
-		Percentage<float> feedback = 0.5f; // 50% for linear decay rate by default
-		bool freeze = false; // disables new input and feedback, cycling the current buffer contents infinitely
+
+		Percentage<float> feedback = 0.5f; // Defaults to 50% for linear decay rate
+
+		bool freeze = false; //< Disable new input and feedback, cycling the current buffer contents infinitely
 
 		// Standard 2 param bandpass
 		Frequency<float> filter_cutoff = 1000.f; // Hz
@@ -76,11 +75,15 @@ public:
 		// float lfo_time_depth = 0.f;
 
 		bool ping_pong = false;
-
-		Percentage<float> dry_wet = 0.5f;
 	};
 
-	void setConfig(const Config& config) { config_ = config; }
+	void setConfig(const Config& config) {
+		this->config_ = config;
+		if (this->config_.channel_link) {
+			this->config_.r_channel = this->config_.l_channel;
+		}
+	}
+
 	void processBlock(std::span<q31_t> buffer) {
 		interpolated::Parameter feedback{old_config_.feedback.value, config_.feedback.value, buffer.size()};
 
@@ -94,78 +97,87 @@ public:
 		// interpolated::Parameter lfo_time_depth{old_config_.lfo_time_depth, new_config_.lfo_time_depth,
 		// buffer.size()};
 
-		interpolated::Parameter dry_wet{old_config_.dry_wet.value, config_.dry_wet.value, buffer.size()};
-
 		// l channel config has changed, so swap
 		if (old_config_.l_channel != config_.l_channel) {
 			auto& old_buffer = bufferLeft();
 			swapBufferLeft();
-			auto& new_buffer = bufferLeft();
+			auto& buffer = bufferLeft();
 
-			new_buffer.set_size(config_.l_channel.duration                                                    // main
-			                    + static_cast<size_t>(config_.l_channel.duration * config_.l_channel.nudge)); // nudge
+			buffer.set_size(config_.l_channel.duration                                                    // main
+			                + static_cast<size_t>(config_.l_channel.duration * config_.l_channel.nudge)); // nudge
 
 			if (mode_ == Mode::Repitch) {
-				new_buffer.RepitchCopyFrom(old_buffer);
+				buffer.RepitchCopyFrom(old_buffer);
 			}
 			else if (mode_ == Mode::Fade) {
-				new_buffer.CopyFrom(old_buffer);
-				new_buffer.ApplyGainRamp(blocks::GainRamp{1.f, 0.f});
+				buffer.CopyFrom(old_buffer);
+				buffer.ApplyGainRamp(blocks::GainRamp{1.f, 0.f});
 			}
-			// Jump discards delay state
+			else if (mode_ == Mode::Jump) {
+				buffer.CopyFrom(old_buffer);
+			}
 		}
 
 		if (old_config_.r_channel != config_.r_channel) {
 			// r channel config has changed, so swap
 			auto& old_buffer = bufferRight();
 			swapBufferRight();
-			auto& new_buffer = bufferRight();
+			auto& buffer = bufferRight();
 
-			new_buffer.set_size(config_.r_channel.duration                                                    // main
-			                    + static_cast<size_t>(config_.r_channel.duration * config_.r_channel.nudge)); // nudge
+			buffer.set_size(config_.r_channel.duration                                                    // main
+			                + static_cast<size_t>(config_.r_channel.duration * config_.r_channel.nudge)); // nudge
 
 			if (mode_ == Mode::Repitch) {
-				new_buffer.RepitchCopyFrom(old_buffer);
+				buffer.RepitchCopyFrom(old_buffer);
 			}
 			else if (mode_ == Mode::Fade) {
-				new_buffer.CopyFrom(old_buffer);
-				new_buffer.ApplyGainRamp(blocks::GainRamp{1.f, 0.f});
+				buffer.CopyFrom(old_buffer);
+				buffer.ApplyGainRamp(blocks::GainRamp{1.f, 0.f});
 			}
-			// Jump discards delay state
+			else if (mode_ == Mode::Jump) {
+				buffer.CopyFrom(old_buffer);
+			}
 		}
 
 		// when the buffer is frozen, no writing is peformed, only advancement of the rec/play head
 		if (config_.freeze) {
-			for (auto& [left, right] : argon::vectorize_interleaved<2, int32_t>(buffer)) {
-				left = bufferLeft().ReadSIMD().ConvertTo<q31_t, 31>(); // To Q31
-				bufferLeft().Advance(4);
+			for (auto& [left_out, right_out] : argon::vectorize_interleaved<2, q31_t>(buffer)) {
+				auto&& [buffer_left, buffer_right] = buffers();
 
-				right = bufferRight().ReadSIMD().ConvertTo<q31_t, 31>(); // To Q31
-				bufferRight().Advance(4);
+				left_out = buffer_left.ReadSIMD().ConvertTo<q31_t, 31>();   // To Q31
+				right_out = buffer_right.ReadSIMD().ConvertTo<q31_t, 31>(); // To Q31
+
+				buffer_left.Advance(4);
+				buffer_right.Advance(4);
 			}
 			return;
 		}
 
 		// Otherwise...
-		for (auto& [left, right] : argon::vectorize_interleaved<2, int32_t>(buffer)) {
-			feedback.Next();
-			filter_cutoff.Next();
-			filter_width.Next();
-			lfo_rate.Next();
-			lfo_filter_depth.Next();
-			dry_wet.Next();
+		for (auto& [left, right] : argon::vectorize_interleaved<2, q31_t>(buffer)) {
+			Argon<float> feedback_value = feedback.NextSIMD();
+			Argon<float> filter_cutoff_value = filter_cutoff.NextSIMD();
+			Argon<float> filter_width_value = filter_width.NextSIMD();
+			Argon<float> lfo_rate_value = lfo_rate.NextSIMD();
+			Argon<float> lfo_filter_depth_value = lfo_filter_depth.NextSIMD();
 
-			/** TODO: continue work here */
+			auto&& [buffer_left, buffer_right] = buffers();
+			auto [input_left, input_right] = {left, right};
+
+			left = buffer_left.ReadSIMD().ConvertTo<q31_t, 31>(); // To Q31
+			buffer_left.Advance(4);
+			buffer_left.WriteSIMD(input_left, feedback_value);
+
+			right = buffer_right.ReadSIMD().ConvertTo<q31_t, 31>(); // To Q31
+			buffer_right.Advance(4);
+			buffer_right.WriteSIMD(input_right, feedback_value);
 		}
 		old_config_ = config_;
 	}
 
-	void process(std::array<Argon<int32_t>, 2> samples) {}
-
-	std::pair<Buffer<kNumSamplesMax>&, Buffer<kNumSamplesMax>&> buffers() { return {bufferLeft(), bufferRight()}; }
+	std::tuple<Buffer<kNumSamplesMax>&, Buffer<kNumSamplesMax>&> buffers() { return {bufferLeft(), bufferRight()}; }
 
 	Buffer<kNumSamplesMax>& bufferLeft() { return l_buffers_[l_buffer_idx_]; }
-
 	Buffer<kNumSamplesMax>& bufferRight() { return l_buffers_[l_buffer_idx_]; }
 
 private:

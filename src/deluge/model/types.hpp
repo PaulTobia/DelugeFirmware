@@ -8,12 +8,16 @@ struct Value {
 	T value = 0;
 	operator T() { return value; }
 	auto operator<=>(const Value<T>& o) const = default;
+	bool operator==(const Value<T>& o) const = default;
 };
 
 template <typename T>
 struct Frequency : Value<T> {
 	Frequency() : Value<T>() {}
 	Frequency(T value) : Value<T>{value} {}
+
+	auto operator<=>(const Frequency& o) const { return this->value <=> o.value; };
+
 	static constexpr std::string_view unit = "Hz";
 };
 
@@ -28,6 +32,20 @@ struct Percentage<float> : Value<float> {
 	Percentage(float value) : Value<float>{value} {}
 	Percentage(float value, float lower_bound, float upper_bound)
 	    : Value<float>{value}, lower_bound{lower_bound}, upper_bound{upper_bound} {}
+
+	bool operator==(const Percentage& o) const {
+		if (this->lower_bound == o.lower_bound && this->upper_bound == o.upper_bound) {
+			return this->value == o.value;
+		}
+
+		float diff = upper_bound - lower_bound;
+		float val_scaled = (this->value - lower_bound) / diff;
+
+		float o_diff = o.upper_bound - o.lower_bound;
+		float o_val_scaled = (o.value - o.lower_bound) / diff;
+
+		return (val_scaled + lower_bound) == (o.value + o.lower_bound);
+	}
 
 	float lower_bound = 0.f;
 	float upper_bound = 1.f;
@@ -58,4 +76,6 @@ struct QFactor : Value<T> {
 
 struct Milliseconds : Value<int32_t> {
 	static constexpr std::string_view unit = "ms";
+	auto operator<=>(const Milliseconds& o) const { return this->value <=> o.value; }
+	bool operator==(const Milliseconds& o) const { return this->value == o.value; }
 };
