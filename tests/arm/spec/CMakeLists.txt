@@ -37,7 +37,7 @@ function(create_specs_driver driver_name spec_dir)
   )
 
   foreach(spec IN LISTS spec_sources)
-    cmake_path(GET spec STEM LAST_ONLY spec_name)
+    cmake_path(GET spec STEM spec_name)
     add_test(
       NAME ${spec_name}
       COMMAND ${driver_name} ${spec_name} --verbose
