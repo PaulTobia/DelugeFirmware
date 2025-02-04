@@ -4,7 +4,7 @@ FetchContent_Declare(CppSpec
 )
 FetchContent_MakeAvailable(CppSpec)
 
-add_subdirectory(../../lib lib)
+add_subdirectory(../../../lib lib)
 
 add_library(deluge STATIC
   ../../src/deluge/dsp/blocks/gain_ramp.cpp
