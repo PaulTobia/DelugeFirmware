@@ -1,6 +1,7 @@
 #include "blocks/gain_ramp.hpp"
 #include <cppspec.hpp>
 
+// clang-format off
 describe gain_ramp("Gain Ramp", $ {
 	using namespace deluge::dsp;
 	it("processes a block of mono samples", _ {
