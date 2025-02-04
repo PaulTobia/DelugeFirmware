@@ -71,4 +71,6 @@ struct StereoSample {
 struct StereoFloatSample {
 	float l;
 	float r;
+
+	constexpr bool operator==(const StereoFloatSample& other) const = default;
 };
