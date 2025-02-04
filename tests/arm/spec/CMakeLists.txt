@@ -38,6 +38,12 @@ function(create_specs_driver driver_name spec_dir)
 
   foreach(spec IN LISTS spec_sources)
     cmake_path(GET spec STEM spec_name)
+    cmake_path(GET spec PARENT_PATH spec_dir)
+    
+    if (NOT spec_dir STREQUAL "")
+      set(spec_name ${spec_dir}/${spec_name})
+    endif()
+    
     add_test(
       NAME ${spec_name}
       COMMAND ${driver_name} ${spec_name} --verbose
