@@ -7,12 +7,14 @@ FetchContent_MakeAvailable(CppSpec)
 add_subdirectory(../../../lib lib)
 
 add_library(deluge STATIC
-  ../../src/deluge/dsp/blocks/gain_ramp.cpp
+  ../../../src/deluge/dsp/blocks/gain_ramp.cpp
 )
 
 target_include_directories(deluge PUBLIC 
-  ../../src/deluge/dsp/blocks/
-  ../../src/deluge/dsp/
+  ../../../src/deluge/dsp/blocks/
+  ../../../src/deluge/dsp/
+  ../../../src/deluge/
+  ../../../src/
 )
 
 set_target_properties(deluge PROPERTIES
