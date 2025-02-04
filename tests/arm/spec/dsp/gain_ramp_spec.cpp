@@ -14,9 +14,9 @@ describe gain_ramp("Gain Ramp", $ {
 
 	it("processes a block of stereo samples", _ {
 		blocks::GainRamp gain_ramp{0.0f, 1.0f};
-		std::array<StereoFloatSample, 3> in = {{1.f, 1.f}, {1.f, 1.f}, {1.f, 1.f}};
+		std::array<StereoFloatSample, 3> in = {StereoFloatSample{1.0f, 1.0f}, StereoFloatSample{1.0f, 1.0f}, StereoFloatSample{1.0f, 1.0f}};
 		std::array<StereoFloatSample, 3> out;
 		gain_ramp.processBlock(in, out);
-		expect(out).to_equal(std::array<StereoFloatSample, 3>{{0.0f, 0.0f}, {0.5f, 0.5f}, {1.0f, 1.0f}});
+		expect(out).to_equal(std::array{StereoFloatSample{0.0f, 0.0f}, StereoFloatSample{0.5f, 0.5f}, StereoFloatSample{1.0f, 1.0f}});
 	});
 });
