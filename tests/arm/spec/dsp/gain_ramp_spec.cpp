@@ -7,7 +7,7 @@ std::ostream& operator<<(std::ostream& os, const StereoFloatSample& sample) {
 }
 
 // clang-format off
-describe gain_ramp("Gain Ramp", $ {
+describe dsp_gain_ramp("Gain Ramp", $ {
 	using namespace deluge::dsp;
 	it("processes a block of mono samples", _ {
 		blocks::GainRamp gain_ramp{0.0f, 1.0f};
@@ -25,3 +25,5 @@ describe gain_ramp("Gain Ramp", $ {
 		expect(out).to_equal(std::array{StereoFloatSample{0.0f, 0.0f}, StereoFloatSample{0.5f, 0.5f}, StereoFloatSample{1.0f, 1.0f}});
 	});
 });
+
+CPPSPEC_SPEC(dsp_gain_ramp);
