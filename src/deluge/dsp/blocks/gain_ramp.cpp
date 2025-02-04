@@ -1,5 +1,5 @@
 #include "gain_ramp.hpp"
-#include "argon/store.hpp"
+#include <argon.hpp>
 
 namespace deluge::dsp::blocks {
 
