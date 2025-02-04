@@ -17,6 +17,8 @@ target_include_directories(deluge PUBLIC
   ../../../src/
 )
 
+target_link_libraries(deluge PUBLIC argon)
+
 set_target_properties(deluge PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED YES
