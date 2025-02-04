@@ -1053,7 +1053,8 @@ ActionResult PerformanceView::padAction(int32_t xDisplay, int32_t yDisplay, int3
 						sessionView.gridHandlePads(xDisplay, yDisplay, on);
 					}
 					// if you pressed the green or blue mode pads, go back to grid view and change mode
-					else if ((yDisplay == std::to_underlying(GridMode::GREEN)) || (yDisplay == std::to_underlying(GridMode::BLUE))) {
+					else if ((yDisplay == std::to_underlying(GridMode::GREEN))
+					         || (yDisplay == std::to_underlying(GridMode::BLUE))) {
 						releaseViewOnExit(modelStack);
 						changeRootUI(&sessionView);
 						sessionView.gridHandlePads(xDisplay, yDisplay, on);
