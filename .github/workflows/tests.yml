@@ -9,8 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-build:
-    name: Build test binary
+  test-build-x86:
+    name: Build test binary for x86
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -50,6 +50,32 @@ jobs:
         with:
           name: Test Results
           path: build/results/**/*.xml
+
+  test-build-arm:
+    name: Build test binary for ARM
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure
+        run: cmake -B build -S tests/arm -G Ninja
+
+      - name: Run build
+        run: cmake --build build
+
+      - name: Run CTest
+        run: ctest --test-dir build --output-junit results/ctest_results.xml
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Test Resultss
+          path: build/results/**/*.xml          
 
   event_file:
     name: "Event File"
