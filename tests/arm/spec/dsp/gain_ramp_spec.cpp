@@ -14,7 +14,7 @@ describe gain_ramp("Gain Ramp", $ {
 		std::array<float, 3> in = {1.f, 1.f, 1.f};
 		std::array<float, 3> out;
 		gain_ramp.processBlock(in, out);
-		expect(out).to_equal(std::vector<float>{0.0f, 0.5f, 1.0f});
+		expect(out).to_equal(std::array{0.0f, 0.5f, 1.0f});
 	});
 
 	it("processes a block of stereo samples", _ {
