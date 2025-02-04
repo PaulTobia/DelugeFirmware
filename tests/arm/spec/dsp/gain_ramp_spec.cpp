@@ -1,5 +1,10 @@
 #include "blocks/gain_ramp.hpp"
+#include "util/functions.h"
 #include <cppspec.hpp>
+
+std::ostream& operator<<(std::ostream& os, const StereoFloatSample& sample) {
+	return os << "StereoSampleFloat{" << sample.l << ", " << sample.r << "}";
+}
 
 // clang-format off
 describe gain_ramp("Gain Ramp", $ {
