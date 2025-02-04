@@ -20,7 +20,7 @@ void GainRamp::processBlock(const std::span<float> in, std::span<float> out) con
 	}
 
 	// Do remainder that don't fit the vector width
-	float single_current = current[1];
+	float single_current = vec_size != 0 ? current[1] : 0.f;
 	for (size_t i = vec_size; i < in.size(); ++i) {
 		out[i] = in[i] * single_current;
 		single_current += single_step;
@@ -44,7 +44,7 @@ void GainRamp::processBlock(std::span<StereoFloatSample> in, std::span<StereoFlo
 	}
 
 	// Do remainder that don't fit the vector width
-	float single_current = current[1];
+	float single_current = vec_size != 0 ? current[1] : 0.f;
 	for (size_t i = vec_size; i < in.size(); ++i) {
 		out[i].l = in[i].l * single_current;
 		out[i].r = in[i].r * single_current;
