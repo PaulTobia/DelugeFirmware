@@ -57,6 +57,62 @@ describe dsp_gain_ramp("Gain Ramp", $ {
 		expect(out).to_equal(std::array{0.0f, 0.0625f, 0.125f, 0.1875f, 0.25f, 0.3125f, 0.375f, 0.4375f, 0.5f, 0.5625f, 0.625f, 0.6875f, 0.75f, 0.8125f, 0.875f, 0.9375f, 1.0f});
 	});
 
+	it("processes a large set of stereo samples using NEON", _ {
+		blocks::GainRamp gain_ramp{0.0f, 0.9375f};
+		std::array<StereoFloatSample, 16> in;
+		in.fill(StereoFloatSample{1.0f, 1.0f});
+		std::array<StereoFloatSample, 16> out;
+		gain_ramp.processBlock(in, out);
+		expect(out).to_equal(
+			std::array{
+				StereoFloatSample{0.0f, 0.0f},
+				StereoFloatSample{0.0625f, 0.0625f},
+				StereoFloatSample{0.125f, 0.125f},
+				StereoFloatSample{0.1875f, 0.1875f},
+				StereoFloatSample{0.25f, 0.25f},
+				StereoFloatSample{0.3125f, 0.3125f},
+				StereoFloatSample{0.375f, 0.375f},
+				StereoFloatSample{0.4375f, 0.4375f},
+				StereoFloatSample{0.5f, 0.5f},
+				StereoFloatSample{0.5625f, 0.5625f},
+				StereoFloatSample{0.625f, 0.625f},
+				StereoFloatSample{0.6875f, 0.6875f},
+				StereoFloatSample{0.75f, 0.75f},
+				StereoFloatSample{0.8125f, 0.8125f},
+				StereoFloatSample{0.875f, 0.875f},
+				StereoFloatSample{0.9375f, 0.9375f},
+			}
+		);
+	});
+
+	it("processes a large set of stereo samples using NEON and non-NEON codepaths", _ {
+		blocks::GainRamp gain_ramp{0.0f, 1.0f};
+		std::array<StereoFloatSample, 17> in;
+		in.fill(StereoFloatSample{1.0f, 1.0f});
+		std::array<StereoFloatSample, 17> out;
+		gain_ramp.processBlock(in, out);
+		expect(out).to_equal(
+			std::array{
+				StereoFloatSample{0.0f, 0.0f},
+				StereoFloatSample{0.0625f, 0.0625f},
+				StereoFloatSample{0.125f, 0.125f},
+				StereoFloatSample{0.1875f, 0.1875f},
+				StereoFloatSample{0.25f, 0.25f},
+				StereoFloatSample{0.3125f, 0.3125f},
+				StereoFloatSample{0.375f, 0.375f},
+				StereoFloatSample{0.4375f, 0.4375f},
+				StereoFloatSample{0.5f, 0.5f},
+				StereoFloatSample{0.5625f, 0.5625f},
+				StereoFloatSample{0.625f, 0.625f},
+				StereoFloatSample{0.6875f, 0.6875f},
+				StereoFloatSample{0.75f, 0.75f},
+				StereoFloatSample{0.8125f, 0.8125f},
+				StereoFloatSample{0.875f, 0.875f},
+				StereoFloatSample{0.9375f, 0.9375f},
+				StereoFloatSample{1.0f, 1.0f},
+			}
+		);
+	});
 });
 
 CPPSPEC_SPEC(dsp_gain_ramp);
