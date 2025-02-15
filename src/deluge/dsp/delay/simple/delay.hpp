@@ -107,7 +107,7 @@ public:
 			                + static_cast<size_t>(config_.l_channel.duration * config_.l_channel.nudge)); // nudge
 
 			if (mode_ == Mode::Repitch) {
-				buffer.RepitchCopyFrom(old_buffer);
+				buffer.CopyFromRepitch(old_buffer);
 			}
 			else if (mode_ == Mode::Fade) {
 				buffer.CopyFrom(old_buffer);
@@ -128,7 +128,7 @@ public:
 			                + static_cast<size_t>(config_.r_channel.duration * config_.r_channel.nudge)); // nudge
 
 			if (mode_ == Mode::Repitch) {
-				buffer.RepitchCopyFrom(old_buffer);
+				buffer.CopyFromRepitch(old_buffer);
 			}
 			else if (mode_ == Mode::Fade) {
 				buffer.CopyFrom(old_buffer);

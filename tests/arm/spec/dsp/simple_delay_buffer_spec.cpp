@@ -81,7 +81,8 @@ describe dsp_simple_delay_buffer("Simple delay buffer", $ {
 		buffer.Write(1, 2.0f);
 		buffer.Write(2, 3.0f);
 		buffer.Write(3, 4.0f);
-		Buffer<4> other{buffer};
+		Buffer<4> other{};
+		other.CopyFrom(buffer);
 		expect(other.Read(0)).to_equal(1.0f);
 		expect(other.Read(1)).to_equal(2.0f);
 		expect(other.Read(2)).to_equal(3.0f);
@@ -94,7 +95,8 @@ describe dsp_simple_delay_buffer("Simple delay buffer", $ {
 		buffer.Write(1, 2.0f);
 		buffer.Write(2, 3.0f);
 		buffer.Write(3, 4.0f);
-		Buffer<2> other{buffer};
+		Buffer<2> other{};
+		other.CopyFrom(buffer);
 		expect(other.Read(0)).to_equal(3.0f);
 		expect(other.Read(1)).to_equal(4.0f);
 	});
@@ -106,7 +108,8 @@ describe dsp_simple_delay_buffer("Simple delay buffer", $ {
 		buffer.Write(2, 3.0f);
 		buffer.Write(3, 4.0f);
 		buffer.Advance(4);
-		Buffer<4> other{buffer};
+		Buffer<4> other{};
+		other.CopyFrom(buffer);
 		expect(other.Read(0)).to_equal(1.0f);
 		expect(other.Read(1)).to_equal(2.0f);
 		expect(other.Read(2)).to_equal(3.0f);

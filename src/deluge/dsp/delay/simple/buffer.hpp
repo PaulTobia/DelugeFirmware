@@ -36,32 +36,8 @@ public:
 	static constexpr size_t max_delay = MaxDelay;
 	static_assert(Argon<float>::lanes == 4);
 
-	Buffer(size_t size) : size_{size} {}
+	constexpr Buffer(size_t size = MaxDelay) : size_{std::min(size, MaxDelay)} {}
 	~Buffer() = default;
-
-	/**
-	 * @brief Copy from one buffer to another, retaining only the most recent samples (discard oldest)
-	 */
-	template <size_t othersize>
-	Buffer(const Buffer<othersize>& other, size_t size = MaxDelay) : size_{std::min(size, MaxDelay)} {
-		size = std::min(size, MaxDelay);
-		// The chunk of newest samples from the current write head to the end, is longer
-		// than the new buffer, so we don't need to copy in segments
-		if (other.pos() >= size) {
-			// copies n newest samples to an n-sized buffer
-			std::copy_n(&other.buffer_[other.pos() - size], size, buffer_.begin());
-			return;
-		}
-
-		// size guaranteed to be greater than other.pos()
-		size_t oldest_samples_size = size - other.pos();
-
-		// copy the newest samples from the start of the other buffer
-		std::copy_n(&other.buffer_[0], other.pos(), &buffer_[oldest_samples_size]);
-
-		// copy the oldest samples from the end of the other buffer
-		std::copy_n(&other.buffer_[other.size() - oldest_samples_size], oldest_samples_size, buffer_.begin());
-	}
 
 	constexpr void Reset() { idx_ = 0; }
 	constexpr void Clear() { raw_buffer_.fill(0); }
@@ -167,8 +143,29 @@ public:
 		buffer_[size_ + 1] = buffer_[1];
 	}
 
+	/// @brief Copy from one buffer to another, retaining only the most recent samples (discard oldest)
 	template <size_t othersize>
-	void RepitchCopyFrom(Buffer<othersize>& origin) {
+	void CopyFrom(const Buffer<othersize>& other) {
+		// The chunk of newest samples from the current write head to the end, is longer
+		// than the new buffer, so we don't need to copy in segments
+		if (other.pos() >= size()) {
+			// copies n newest samples to an n-sized buffer
+			std::copy_n(&other.buffer_[other.pos() - size()], size(), buffer_.begin());
+			return;
+		}
+
+		// size guaranteed to be greater than other.pos()
+		size_t oldest_samples_size = size() - other.pos();
+
+		// copy the newest samples from the start of the other buffer
+		std::copy_n(&other.buffer_[0], other.pos(), &buffer_[oldest_samples_size]);
+
+		// copy the oldest samples from the end of the other buffer
+		std::copy_n(&other.buffer_[other.size() - oldest_samples_size], oldest_samples_size, buffer_.begin());
+	}
+
+	template <size_t othersize>
+	void CopyFromRepitch(Buffer<othersize>& origin) {
 		if (size() == origin.size()) [[unlikely]] {
 			const size_t read_pos = origin.pos();
 			if (read_pos == 0) {
