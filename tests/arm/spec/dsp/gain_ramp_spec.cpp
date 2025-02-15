@@ -113,6 +113,14 @@ describe dsp_gain_ramp("Gain Ramp", $ {
 			}
 		);
 	});
+
+	it("immediately applies the end value if the length is only 1", _ {
+		blocks::GainRamp gain_ramp{0.0f, 2.0f};
+		std::array<float, 1> in = {1.f};
+		std::array<float, 1> out;
+		gain_ramp.processBlock(in, out);
+		expect(out).to_equal(std::array{2.0f});
+	});
 });
 
 CPPSPEC_SPEC(dsp_gain_ramp);

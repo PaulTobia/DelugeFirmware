@@ -5,7 +5,12 @@
 namespace deluge::dsp::blocks {
 
 void GainRamp::processBlock(const std::span<float> in, std::span<float> out) const {
-	float single_step = (end_ - start_) / static_cast<float>(in.size() - 1);
+	if (in.size() == 1) {
+		out[0] = in[0] * end_;
+		return;
+	}
+
+	float single_step = (end_ - start_) / static_cast<float>(in.size() - 1); // Avoid NaN
 	float start = start_ - single_step;
 
 	// NEON-accelerated version
@@ -30,7 +35,13 @@ void GainRamp::processBlock(const std::span<float> in, std::span<float> out) con
 }
 
 void GainRamp::processBlock(std::span<StereoFloatSample> in, std::span<StereoFloatSample> out) {
-	float single_step = (end_ - start_) / static_cast<float>(in.size() - 1);
+	if (in.size() == 1) {
+		out[0].l = in[0].l * end_;
+		out[0].r = in[0].r * end_;
+		return;
+	}
+
+	float single_step = (end_ - start_) / static_cast<float>(in.size() - 1); // Avoid NaN
 	float start = start_ - single_step;
 
 	Argon<float> current = Argon<float>{start}.MultiplyAdd(single_step, {1.f, 2.f, 3.f, 4.f});

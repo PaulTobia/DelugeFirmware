@@ -30,12 +30,38 @@ namespace deluge::dsp::delay::simple {
 /**
  * @brief This class is essentially a fractional delay line/FIFO-queue combined with a circular buffer.
  */
-template <size_t max_delay>
+template <size_t MaxDelay>
 class Buffer {
 public:
+	static constexpr size_t max_delay = MaxDelay;
 	static_assert(Argon<float>::lanes == 4);
-	Buffer(size_t size) : size_(size) {}
+
+	Buffer(size_t size) : size_{size} {}
 	~Buffer() = default;
+
+	/**
+	 * @brief Copy from one buffer to another, retaining only the most recent samples (discard oldest)
+	 */
+	template <size_t othersize>
+	Buffer(const Buffer<othersize>& other, size_t size = MaxDelay) : size_{std::min(size, MaxDelay)} {
+		size = std::min(size, MaxDelay);
+		// The chunk of newest samples from the current write head to the end, is longer
+		// than the new buffer, so we don't need to copy in segments
+		if (other.pos() >= size) {
+			// copies n newest samples to an n-sized buffer
+			std::copy_n(&other.buffer_[other.pos() - size], size, buffer_.begin());
+			return;
+		}
+
+		// size guaranteed to be greater than other.pos()
+		size_t oldest_samples_size = size - other.pos();
+
+		// copy the newest samples from the start of the other buffer
+		std::copy_n(&other.buffer_[0], other.pos(), &buffer_[oldest_samples_size]);
+
+		// copy the oldest samples from the end of the other buffer
+		std::copy_n(&other.buffer_[other.size() - oldest_samples_size], oldest_samples_size, buffer_.begin());
+	}
 
 	constexpr void Reset() { idx_ = 0; }
 	constexpr void Clear() { raw_buffer_.fill(0); }
@@ -93,6 +119,8 @@ public:
 
 	[[nodiscard]] constexpr float Read(size_t integral = 0) const { return buffer_[wrap(idx_ + integral)]; }
 
+	/// @brief Read a sample from the buffer using Hermite interpolation
+	/// @note You must call PrepForInterpolate() before using this function
 	[[nodiscard]] constexpr float ReadFractional(float index) const {
 		return InterpolateHermiteTable(buffer_, wrap(idx_ + index));
 	}
@@ -183,35 +211,24 @@ public:
 		}
 	}
 
-	/**
-	 * @brief Copy from one buffer to another, retaining only the most recent samples (discard oldest)
-	 */
-	template <size_t othersize>
-	void CopyFrom(const Buffer<othersize>& origin) {
-		// The chunk of newest samples from the current write head to the end, is longer
-		// than the new buffer, so we don't need to copy in segments
-		if (origin.pos() >= size()) {
-			// copies n newest samples to an n-sized buffer
-			std::copy_n(&origin.buffer_[origin.pos() - size()], size(), buffer_.begin());
-			return;
-		}
-
-		size_t wrap_size = size() - origin.pos();
-		std::copy_n(&origin.buffer_[origin.size() - wrap_size], wrap_size, buffer_.begin());
-		std::copy_n(&origin.buffer_[0], origin.size(), &buffer_[wrap_size]);
-	}
-
+	/// @brief Apply a gain ramp to the buffer
+	/// @param gain_ramp The gain ramp to apply
+	/// @note This function modifies the buffer in place
 	void ApplyGainRamp(dsp::blocks::GainRamp gain_ramp) {
 		const float start = gain_ramp.start();
 		const float end = gain_ramp.end();
 
-		const float breakpoint = end - ((end - start) * (pos() / size()));
+		// calculate the breakpoint, i.e. the gain would wrap around inside the buffer
+		const float breakpoint = end - ((end - start) * (static_cast<float>(pos()) / static_cast<float>(size() - 1)));
 
-		std::span first_block{buffer_.data(), pos()};
-		dsp::blocks::GainRamp{breakpoint, start}.processBlock(first_block, first_block);
+		// apply the gain ramp in two halves
+		// first half: from the write head to the end
+		std::span first_block{&buffer_[pos()], &buffer_[size()]};
+		dsp::blocks::GainRamp{start, breakpoint}.processBlock(first_block, first_block);
 
-		std::span second_block{&buffer_[pos()], &buffer_[size()]};
-		dsp::blocks::GainRamp{end, breakpoint}.processBlock(second_block, second_block);
+		// second half: from the start to the write head
+		std::span second_block{buffer_.data(), pos()};
+		dsp::blocks::GainRamp{breakpoint, end}.processBlock(second_block, second_block);
 	}
 
 	[[nodiscard]] constexpr size_t size() const { return size_; }
@@ -219,7 +236,8 @@ public:
 	[[nodiscard]] constexpr size_t pos() const { return idx_; }
 
 private:
-	[[nodiscard]] constexpr size_t wrap(size_t index) const {
+	template <typename T>
+	[[nodiscard]] constexpr T wrap(T index) const {
 		if (index >= size_) {
 			return index - size_;
 		}
